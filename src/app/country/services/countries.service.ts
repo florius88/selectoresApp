@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map, of, tap } from 'rxjs';
 
-import { CountrySmall } from '../interfaces/country.interface';
+import { Country, CountrySmall, Region } from '../interfaces/country.interface';
 
 
 @Injectable({
@@ -10,21 +10,28 @@ import { CountrySmall } from '../interfaces/country.interface';
 })
 export class CountriesService {
 
-  private _regiones: string[] = ['Africa', 'Americas', 'Asia', 'Europe', 'Oceania']
+  private _regions: Region[] = [Region.Africa, Region.Americas, Region.Asia, Region.Europe, Region.Oceania]
   private baseUrl: string = 'https://restcountries.com/v3.1'
-  /* private cors = require('cors') */
 
   constructor(private http: HttpClient) { }
 
-  get regiones(): string[] {
-    return [...this._regiones];
+  get regions(): Region[] {
+    return [...this._regions];
   }
 
-  getCountriesForRegion(region: string): Observable<CountrySmall[]> {
+  getCountriesForRegion(region: Region): Observable<CountrySmall[]> {
+    // Si no viene region, devolver un observable vacío
+    if (!region) return of([])
 
-    /* app.use(cors()); */
-    const url: string = `${this.baseUrl}/region/${region}?fields=cca3,name}`
-    return this.http.get<CountrySmall[]>(url)
+    const url: string = `${this.baseUrl}/region/${region}?fields=cca3,name,borders`
+    return this.http.get<Country[]>(url)
+      .pipe(
+        map(countries => countries.map(country => ({
+          name: country.name.common,
+          cca3: country.cca3,
+          borders: country.borders
+        })))
+      )
 
   }
 

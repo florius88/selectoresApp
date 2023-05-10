@@ -3,7 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { switchMap, tap } from 'rxjs';
 
 import { CountriesService } from '../../services/countries.service';
-import { CountrySmall } from '../../interfaces/country.interface';
+import { CountrySmall, Region } from '../../interfaces/country.interface';
 
 @Component({
   selector: 'app-selector-page',
@@ -13,23 +13,26 @@ import { CountrySmall } from '../../interfaces/country.interface';
 })
 export class SelectorPageComponent implements OnInit {
 
-  myForm: FormGroup = this.fb.group({
+  public myForm: FormGroup = this.fb.group({
     region: ['', Validators.required],
-    pais: ['', Validators.required],
+    country: ['', Validators.required],
+    borders: ['', Validators.required],
   })
 
   // Llenar selectores
-  regiones: string[] = []
-  paises: CountrySmall[] = []
+  public regiones: Region[] = []
+  public countriesByRegion: CountrySmall[] = []
 
   constructor(
     private fb: FormBuilder,
     private countriesService: CountriesService
   ) { }
 
-  ngOnInit(): void {
-    this.regiones = this.countriesService.regiones
+  get regions(): Region[] {
+    return this.countriesService.regions
+  }
 
+  ngOnInit(): void {
     // Cuando cambie la region
     /* Esta es la forma 'fea'
     this.myForm.get('region')?.valueChanges
@@ -41,15 +44,21 @@ export class SelectorPageComponent implements OnInit {
             this.paises = paises
           })
       }) */
+
+    this.onRegionChanged()
+
+  }
+
+  onRegionChanged(): void {
     this.myForm.get('region')?.valueChanges
       .pipe(
-        tap( ( _ ) => {
+        tap((_) => {
           this.myForm.get('pais')?.reset('')
         }),
         switchMap(region => this.countriesService.getCountriesForRegion(region))
       )
-      .subscribe(paises => {
-        this.paises = paises
+      .subscribe(countries => {
+        this.countriesByRegion = countries
       })
   }
 
