@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { filter, switchMap, tap } from 'rxjs';
+import { Observable, filter, switchMap, tap } from 'rxjs';
 
 import { CountriesService } from '../../services/countries.service';
 import { CountrySmall, Region } from '../../interfaces/country.interface';
@@ -20,9 +20,8 @@ export class SelectorPageComponent implements OnInit {
   })
 
   // Llenar selectores
-  public regiones: Region[] = []
   public countriesByRegion: CountrySmall[] = []
-  public borders: string[] | undefined = []
+  public borders: CountrySmall[] = []
 
   constructor(
     private fb: FormBuilder,
@@ -52,12 +51,12 @@ export class SelectorPageComponent implements OnInit {
   }
 
   onRegionChanged(): void {
-    this.myForm.get('region')?.valueChanges
+    this.myForm.get('region')!.valueChanges
       .pipe(
         // Tambien puede ser con this.myForm.get('country')!.setValue('')
-        tap((_) => { this.myForm.get('country')!.reset('') }),
+        tap(() => { this.myForm.get('country')!.reset('') }),
         tap(() => this.borders = []),
-        switchMap(region => this.countriesService.getCountriesForRegion(region))
+        switchMap((region) => this.countriesService.getCountriesForRegion(region))
       )
       .subscribe(countries => {
         this.countriesByRegion = countries
@@ -65,16 +64,19 @@ export class SelectorPageComponent implements OnInit {
   }
 
   onCountryChanged(): void {
-    this.myForm.get('country')?.valueChanges
+    this.myForm.get('country')!.valueChanges
       .pipe(
         // Tambien puede ser con this.myForm.get('border')!.setValue('')
-        tap((_) => { this.myForm.get('border')!.reset('') }),
+        tap(() => { this.myForm.get('border')!.reset('') }),
         // Si no pasa este filtro, no hace nada más de lo que viene a continuación
-        filter((value: string) => value.length > 0 ),
-        switchMap(alphaCode => this.countriesService.getCountryByAlphaCode(alphaCode))
+        filter((value: string) => value.length > 0),
+        switchMap((alphaCode) => this.countriesService.getCountryByAlphaCode(alphaCode)),
+        switchMap((country) => this.countriesService.getCountryBordersByCodes(country.borders!))
       )
-      .subscribe(country => {
-        this.borders = country.borders
+      /* .subscribe(country => {
+        this.borders = country.borders */
+      .subscribe(countries => {
+        this.borders = countries
       })
   }
 
